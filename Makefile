@@ -5,7 +5,7 @@ include ./common.mk
 all: build integration-tests
 
 build-base-docker-image:
-	docker build . -f Dockerfile-base -t "buoyantio/emojivoto-svc-base:$(IMAGE_TAG)"
+	docker build . -f Dockerfile-base -t "ghcr.io/3u13r/emojivoto-svc-base:$(IMAGE_TAG)"
 
 web:
 	$(MAKE) -C emojivoto-web
@@ -17,11 +17,6 @@ voting-svc:
 	$(MAKE) -C emojivoto-voting-svc
 
 build: web emoji-svc voting-svc
-
-multi-arch:
-	$(MAKE) -C emojivoto-web build-multi-arch
-	$(MAKE) -C emojivoto-emoji-svc build-multi-arch
-	$(MAKE) -C emojivoto-voting-svc build-multi-arch
 
 deploy-to-minikube:
 	$(MAKE) -C emojivoto-web build-container
@@ -39,6 +34,6 @@ deploy-to-docker-compose:
 	docker-compose -f ./docker-compose.yml up -d
 
 push-%:
-	docker push buoyantio/emojivoto-$*:$(IMAGE_TAG)
+	docker push ghcr.io/3u13r/emojivoto-$*:$(IMAGE_TAG)
 
-push: push-svc-base push-emoji-svc push-voting-svc push-web
+push: push-emoji-svc push-voting-svc push-web

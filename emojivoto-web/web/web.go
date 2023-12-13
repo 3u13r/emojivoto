@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
-	pb "github.com/buoyantio/emojivoto/emojivoto-web/gen/proto"
+	pb "github.com/buoyantio/emojivoto/proto"
 	"go.opencensus.io/plugin/ochttp"
 )
 
@@ -47,7 +46,6 @@ func (app *WebApp) listEmojiHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *WebApp) leaderboardHandler(w http.ResponseWriter, r *http.Request) {
 	results, err := app.votingServiceClient.Results(r.Context(), &pb.ResultsRequest{})
-
 	if err != nil {
 		writeError(err, w, r, http.StatusInternalServerError)
 		return
@@ -60,7 +58,6 @@ func (app *WebApp) leaderboardHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		findByShortcodeResponse, err := app.emojiServiceClient.FindByShortcode(r.Context(), findByShortcodeRequest)
-
 		if err != nil {
 			writeError(err, w, r, http.StatusInternalServerError)
 			return
@@ -352,7 +349,7 @@ func (app *WebApp) indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *WebApp) jsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/javascript")
-	f, err := ioutil.ReadFile(app.indexBundle)
+	f, err := os.ReadFile(app.indexBundle)
 	if err != nil {
 		panic(err)
 	}
@@ -385,7 +382,6 @@ func handle(path string, h func(w http.ResponseWriter, r *http.Request)) {
 }
 
 func StartServer(webPort, webpackDevServer, indexBundle string, emojiServiceClient pb.EmojiServiceClient, votingClient pb.VotingServiceClient) {
-
 	motd := os.Getenv("MESSAGE_OF_THE_DAY")
 	webApp := &WebApp{
 		emojiServiceClient:  emojiServiceClient,

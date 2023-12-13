@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	pb "github.com/buoyantio/emojivoto/emojivoto-voting-svc/gen/proto"
 	"github.com/buoyantio/emojivoto/emojivoto-voting-svc/voting"
+	pb "github.com/buoyantio/emojivoto/proto"
 )
 
 func TestVoteJoy(t *testing.T) {
@@ -20,7 +20,6 @@ func TestVoteJoy(t *testing.T) {
 
 		request := pb.VoteRequest{}
 		_, err := emojivotoService.VoteJoy(ctx, &request)
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -48,7 +47,6 @@ func TestLeaderboard(t *testing.T) {
 		emojivotoService.VoteGhost(ctx, voteRequest)
 
 		response, err := emojivotoService.Results(context.Background(), &pb.ResultsRequest{})
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -67,4 +65,4 @@ func TestLeaderboard(t *testing.T) {
 	})
 }
 
-//TODO: test for errors
+// TODO: test for errors

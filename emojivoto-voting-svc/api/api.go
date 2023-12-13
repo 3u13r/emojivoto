@@ -7,14 +7,12 @@ import (
 	"math/rand"
 	"time"
 
-	pb "github.com/buoyantio/emojivoto/emojivoto-voting-svc/gen/proto"
 	"github.com/buoyantio/emojivoto/emojivoto-voting-svc/voting"
+	pb "github.com/buoyantio/emojivoto/proto"
 	"google.golang.org/grpc"
 )
 
-var (
-	FloatZero = float32(0.0)
-)
+var FloatZero = float32(0.0)
 
 type PollServiceServer struct {
 	poll                    voting.Poll
@@ -24,7 +22,6 @@ type PollServiceServer struct {
 }
 
 func (pS *PollServiceServer) vote(shortcode string) (*pb.VoteResponse, error) {
-
 	time.Sleep(pS.artificialDelayDuration)
 
 	err := pS.poll.Vote(shortcode)
@@ -32,7 +29,6 @@ func (pS *PollServiceServer) vote(shortcode string) (*pb.VoteResponse, error) {
 }
 
 func (pS *PollServiceServer) VoteDoughnut(_ context.Context, _ *pb.VoteRequest) (*pb.VoteResponse, error) {
-
 	if pS.failureRate > FloatZero {
 		probability := rand.Float32()
 

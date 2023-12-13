@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"testing"
 
-	pb "github.com/buoyantio/emojivoto/emojivoto-web/gen/proto"
+	pb "github.com/buoyantio/emojivoto/proto"
 	"google.golang.org/grpc"
 )
 
@@ -463,7 +463,6 @@ func (c *MockVotingServiceClient) Results(ctx context.Context, in *pb.ResultsReq
 }
 
 func TestListEmojiHandler(t *testing.T) {
-
 	t.Run("returns correct list", func(t *testing.T) {
 		expectedList := []*pb.Emoji{{Shortcode: "a", Unicode: "\\a"}, {Shortcode: "b", Unicode: "\\b"}}
 		emojiSvcClient := &MockEmojiServiceClient{emojiList: expectedList}
@@ -604,7 +603,6 @@ func TestVoteHandler(t *testing.T) {
 }
 
 func TestLeaderboard(t *testing.T) {
-
 	t.Run("registers the vote if everything is valid", func(t *testing.T) {
 		expectedList := []*pb.Emoji{
 			{Shortcode: ":100:", Unicode: "\U0001f4af"},
@@ -675,4 +673,4 @@ func TestLeaderboard(t *testing.T) {
 	})
 }
 
-//TODO: test for errors
+// TODO: test for errors

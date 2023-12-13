@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/buoyantio/emojivoto/emojivoto-emoji-svc/emoji"
-	pb "github.com/buoyantio/emojivoto/emojivoto-emoji-svc/gen/proto"
+	pb "github.com/buoyantio/emojivoto/proto"
 	"google.golang.org/grpc"
 )
 
@@ -14,7 +14,6 @@ type EmojiServiceServer struct {
 }
 
 func (svc *EmojiServiceServer) ListAll(ctx context.Context, req *pb.ListAllEmojiRequest) (*pb.ListAllEmojiResponse, error) {
-
 	emoji := svc.allEmoji.List()
 
 	list := make([]*pb.Emoji, 0)

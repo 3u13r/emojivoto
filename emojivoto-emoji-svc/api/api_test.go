@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/buoyantio/emojivoto/emojivoto-emoji-svc/emoji"
-	pb "github.com/buoyantio/emojivoto/emojivoto-emoji-svc/gen/proto"
+	pb "github.com/buoyantio/emojivoto/proto"
 )
 
 func TestListAll(t *testing.T) {
@@ -17,7 +17,6 @@ func TestListAll(t *testing.T) {
 		}
 
 		response, err := emojiService.ListAll(ctx, &pb.ListAllEmojiRequest{})
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -52,7 +51,6 @@ func TestFindByShortcode(t *testing.T) {
 		response, err := emojivotoService.FindByShortcode(context.Background(), &pb.FindByShortcodeRequest{
 			Shortcode: emojiSearchedFor.Shortcode,
 		})
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,7 +73,6 @@ func TestFindByShortcode(t *testing.T) {
 		response, err := emojivotoService.FindByShortcode(context.Background(), &pb.FindByShortcodeRequest{
 			Shortcode: "doesnt-really-exist",
 		})
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,5 +81,4 @@ func TestFindByShortcode(t *testing.T) {
 			t.Fatalf("Expected to return nil for emoji, returned [%s]", response.Emoji)
 		}
 	})
-
 }
