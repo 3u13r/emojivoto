@@ -5,12 +5,15 @@ import (
 	"os"
 	"time"
 
-	pb "github.com/buoyantio/emojivoto/emojivoto-web/gen/proto"
-	"github.com/buoyantio/emojivoto/emojivoto-web/web"
-	"google.golang.org/grpc"
 	"contrib.go.opencensus.io/exporter/ocagent"
+	"github.com/buoyantio/emojivoto/emojivoto-web/web"
+	etls "github.com/buoyantio/emojivoto/internal/tls"
+	pb "github.com/buoyantio/emojivoto/proto"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/trace"
+	"google.golang.org/grpc"
+
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -23,13 +26,12 @@ var (
 )
 
 func main() {
-
 	if webPort == "" || emojisvcHost == "" || votingsvcHost == "" {
 		log.Fatalf("WEB_PORT (currently [%s]) EMOJISVC_HOST (currently [%s]) and VOTINGSVC_HOST (currently [%s]) INDEX_BUNDLE (currently [%s]) environment variables must me set.", webPort, emojisvcHost, votingsvcHost, indexBundle)
 	}
 
 	oce, err := ocagent.NewExporter(
-		ocagent.WithInsecure(),
+		ocagent.WithTLSCredentials(credentials.NewTLS(etls.LoadTLSConfig())),
 		ocagent.WithReconnectionPeriod(5*time.Second),
 		ocagent.WithAddress(ocagentHost),
 		ocagent.WithServiceName("web"))
@@ -53,9 +55,8 @@ func openGrpcClientConnection(host string) *grpc.ClientConn {
 	log.Printf("Connecting to [%s]", host)
 	conn, err := grpc.Dial(
 		host,
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(credentials.NewTLS(etls.LoadTLSConfig())),
 		grpc.WithStatsHandler(new(ocgrpc.ClientHandler)))
-
 	if err != nil {
 		panic(err)
 	}

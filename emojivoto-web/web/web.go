@@ -10,6 +10,8 @@ import (
 	"os"
 	"strconv"
 
+	etls "github.com/buoyantio/emojivoto/internal/tls"
+
 	pb "github.com/buoyantio/emojivoto/proto"
 	"go.opencensus.io/plugin/ochttp"
 )
@@ -403,7 +405,13 @@ func StartServer(webPort, webpackDevServer, indexBundle string, emojiServiceClie
 	// TODO: make static assets dir configurable
 	http.Handle("/dist/", http.StripPrefix("/dist/", http.FileServer(http.Dir("dist"))))
 
-	err := http.ListenAndServe(fmt.Sprintf(":%s", webPort), nil)
+	tlsConfig := etls.LoadTLSConfig()
+
+	server := &http.Server{
+		Addr:      fmt.Sprintf(":%s", webPort),
+		TLSConfig: tlsConfig,
+	}
+	err := server.ListenAndServeTLS("", "")
 	if err != nil {
 		panic(err)
 	}

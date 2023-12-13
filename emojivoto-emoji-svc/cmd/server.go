@@ -13,11 +13,13 @@ import (
 	"contrib.go.opencensus.io/exporter/ocagent"
 	"github.com/buoyantio/emojivoto/emojivoto-emoji-svc/api"
 	"github.com/buoyantio/emojivoto/emojivoto-emoji-svc/emoji"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	etls "github.com/buoyantio/emojivoto/internal/tls"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opencensus.io/plugin/ocgrpc"
 	"go.opencensus.io/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -27,13 +29,12 @@ var (
 )
 
 func main() {
-
 	if grpcPort == "" {
 		log.Fatalf("GRPC_PORT (currently [%s]) environment variable must me set to run the server.", grpcPort)
 	}
 
 	oce, err := ocagent.NewExporter(
-		ocagent.WithInsecure(),
+		ocagent.WithTLSCredentials(credentials.NewTLS(etls.LoadTLSConfig())),
 		ocagent.WithReconnectionPeriod(5*time.Second),
 		ocagent.WithAddress(ocagentHost),
 		ocagent.WithServiceName("emoji"))
@@ -65,6 +66,7 @@ func main() {
 	go func() {
 		grpc_prometheus.EnableHandlingTimeHistogram()
 		grpcServer := grpc.NewServer(
+			grpc.Creds(credentials.NewTLS(etls.LoadTLSConfig())),
 			grpc.StatsHandler(&ocgrpc.ServerHandler{}),
 			grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
 			grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
