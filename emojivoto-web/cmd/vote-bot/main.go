@@ -1,9 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
@@ -11,10 +12,6 @@ import (
 	"os"
 	"strconv"
 	"time"
-
-	"contrib.go.opencensus.io/exporter/ocagent"
-	"go.opencensus.io/plugin/ochttp"
-	"go.opencensus.io/trace"
 )
 
 // VoteBot votes for emoji! :ballot_box_with_check:
@@ -24,19 +21,11 @@ import (
 // When not voting for :doughnut:, VoteBot can’t be bothered to
 // pick a favorite, so it picks one at random. C'mon VoteBot, try harder!
 
-var (
-	client = &http.Client{Transport: &ochttp.Transport{}}
-
-	ocagentHost = os.Getenv("OC_AGENT_HOST")
-)
-
 type emoji struct {
 	Shortcode string
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	webHost := os.Getenv("WEB_HOST")
 	if webHost == "" {
 		log.Fatalf("WEB_HOST environment variable must me set")
@@ -46,10 +35,10 @@ func main() {
 
 	// setting the the TTL is optional, thus invalid numbers are simply ignored
 	timeToLive, _ := strconv.Atoi(os.Getenv("TTL"))
-	var deadline time.Time = time.Unix(0, 0)
+	var _ time.Time = time.Unix(0, 0)
 
 	if timeToLive != 0 {
-		deadline = time.Now().Add(time.Second * time.Duration(timeToLive))
+		_ = time.Now().Add(time.Second * time.Duration(timeToLive))
 	}
 
 	// setting the the request rate is optional, thus invalid numbers are simply ignored
@@ -58,33 +47,57 @@ func main() {
 		requestRate = 1
 	}
 
-	oce, err := ocagent.NewExporter(
-		ocagent.WithInsecure(),
-		ocagent.WithReconnectionPeriod(5*time.Second),
-		ocagent.WithAddress(ocagentHost),
-		ocagent.WithServiceName("vote-bot"))
-	if err != nil {
-		log.Fatalf("Failed to create ocagent-exporter: %v", err)
-	}
-	trace.RegisterExporter(oce)
-	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
-
-	webURL := "http://" + webHost
+	webURL := "https://" + webHost
 	if _, err := url.Parse(webURL); err != nil {
 		log.Fatalf("WEB_HOST %s is invalid", webHost)
 	}
 
-	for {
-		// check if deadline has been reached, when TTL has been set.
-		if (!deadline.IsZero()) && time.Now().After(deadline) {
-			fmt.Printf("Time to live of %d seconds reached, completing\n", timeToLive)
-			os.Exit(0)
+	/*
+		caCertPath, ok := os.LookupEnv("EDG_CA_PATH")
+		if !ok {
+			panic("EDG_CA_CERT_PATH environment variable must be set")
 		}
+		// Load CA cert
+		rootCAs := x509.NewCertPool()
+		caCert, err := os.ReadFile(caCertPath)
+		if err != nil {
+			panic(err)
+		}
+		if ok := rootCAs.AppendCertsFromPEM(caCert); !ok {
+			panic("failed to append CA cert")
+		}
+
+		// Create the credentials and return it
+		config := &tls.Config{
+			RootCAs: rootCAs,
+		}
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: config,
+			},
+		}
+	*/
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // TODO: remove this
+			},
+		},
+	}
+
+	for {
+		/*
+			// check if deadline has been reached, when TTL has been set.
+			if (!deadline.IsZero()) && time.Now().After(deadline) {
+				fmt.Printf("Time to live of %d seconds reached, completing\n", timeToLive)
+				os.Exit(0)
+			}
+		*/
 
 		time.Sleep(time.Second / time.Duration(requestRate))
 
 		// Get the list of available shortcodes
-		shortcodes, err := shortcodes(webURL, hostOverride)
+		shortcodes, err := shortcodes(client, webURL, hostOverride)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			continue
@@ -94,10 +107,10 @@ func main() {
 		probability := rand.Float32()
 		switch {
 		case probability < 0.15:
-			err = vote(webURL, hostOverride, ":doughnut:")
+			err = vote(client, webURL, hostOverride, ":doughnut:")
 		default:
 			random := shortcodes[rand.Intn(len(shortcodes))]
-			err = vote(webURL, hostOverride, random)
+			err = vote(client, webURL, hostOverride, random)
 		}
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
@@ -105,7 +118,7 @@ func main() {
 	}
 }
 
-func shortcodes(webURL string, hostOverride string) ([]string, error) {
+func shortcodes(client *http.Client, webURL string, hostOverride string) ([]string, error) {
 	url := fmt.Sprintf("%s/api/list", webURL)
 	req, _ := http.NewRequest("GET", url, nil)
 	if hostOverride != "" {
@@ -117,7 +130,7 @@ func shortcodes(webURL string, hostOverride string) ([]string, error) {
 	}
 	defer resp.Body.Close()
 
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +149,7 @@ func shortcodes(webURL string, hostOverride string) ([]string, error) {
 	return shortcodes, nil
 }
 
-func vote(webURL string, hostOverride string, shortcode string) error {
+func vote(client *http.Client, webURL string, hostOverride string, shortcode string) error {
 	fmt.Printf("✔ Voting for %s\n", shortcode)
 
 	url := fmt.Sprintf("%s/api/vote?choice=%s", webURL, shortcode)
